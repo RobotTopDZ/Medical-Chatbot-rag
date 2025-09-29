@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>MediBot - Your AI Medical Assistant</title>
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+		<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}"/>
+	</head>
+	
+	
+	<body>
+		<div class="container-fluid h-100">
+			<div class="row justify-content-center h-100">		
+				<div class="col-md-10 col-lg-8 col-xl-6 chat">
+					<div class="card shadow-lg">
+						<div class="card-header msg_head">
+							<div class="d-flex bd-highlight align-items-center">
+								<div class="img_cont">
+									<div class="bot-avatar">
+										<i class="fas fa-user-md"></i>
+									</div>
+									<span class="online_icon"></span>
+								</div>
+								<div class="user_info">
+									<h5 class="mb-0">MediBot</h5>
+									<p class="mb-0">Your AI Medical Assistant</p>
+									<small class="text-muted">Always consult a healthcare professional for serious concerns</small>
+								</div>
+								<div class="ml-auto">
+									<button class="btn btn-sm btn-outline-light" id="clearChat">
+										<i class="fas fa-trash-alt"></i>
+									</button>
+								</div>
+							</div>
+						</div>
+						<div id="messageFormeight" class="card-body msg_card_body">
+							<div class="welcome-message">
+								<div class="d-flex justify-content-center mb-4">
+									<div class="welcome-card">
+										<div class="text-center">
+											<i class="fas fa-stethoscope welcome-icon"></i>
+											<h4>Welcome to MediBot</h4>
+											<p>I'm here to help answer your medical questions using evidence-based information. Please describe your symptoms or ask any health-related questions.</p>
+											<div class="disclaimer">
+												<small><i class="fas fa-exclamation-triangle"></i> This is for informational purposes only and should not replace professional medical advice.</small>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="card-footer">
+							<form id="messageArea" class="input-group">
+                                <input type="text" id="text" name="msg" placeholder="Describe your symptoms or ask a medical question..." autocomplete="off" class="form-control type_msg" required/>
+								<div class="input-group-append">
+									<button type="submit" id="send" class="input-group-text send_btn">
+										<i class="fas fa-paper-plane"></i>
+									</button>
+								</div>
+							</form>
+							<div class="typing-indicator" id="typingIndicator" style="display: none;">
+								<div class="typing-dots">
+									<span></span>
+									<span></span>
+									<span></span>
+								</div>
+								<span class="typing-text">MediBot is thinking...</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<script>
+			$(document).ready(function() {
+				// Clear chat functionality
+				$("#clearChat").on("click", function() {
+					$("#messageFormeight").html(`
+						<div class="welcome-message">
+							<div class="d-flex justify-content-center mb-4">
+								<div class="welcome-card">
+									<div class="text-center">
+										<i class="fas fa-stethoscope welcome-icon"></i>
+										<h4>Welcome to MediBot</h4>
+										<p>I'm here to help answer your medical questions using evidence-based information. Please describe your symptoms or ask any health-related questions.</p>
+										<div class="disclaimer">
+											<small><i class="fas fa-exclamation-triangle"></i> This is for informational purposes only and should not replace professional medical advice.</small>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					`);
+				});
+
+				$("#messageArea").on("submit", function(event) {
+					event.preventDefault();
+					
+					const date = new Date();
+					const hour = date.getHours().toString().padStart(2, '0');
+					const minute = date.getMinutes().toString().padStart(2, '0');
+					const str_time = hour + ":" + minute;
+					var rawText = $("#text").val().trim();
+					
+					if (!rawText) return;
+
+					// Hide welcome message on first interaction
+					$(".welcome-message").fadeOut();
+
+					// User message HTML with improved styling
+					var userHtml = `
+						<div class="d-flex justify-content-end mb-4">
+							<div class="msg_cotainer_send">
+								${rawText}
+								<span class="msg_time_send">${str_time}</span>
+							</div>
+							<div class="img_cont_msg">
+								<div class="user-avatar">
+									<i class="fas fa-user"></i>
+								</div>
+							</div>
+						</div>
+					`;
+					
+					$("#text").val("");
+					$("#messageFormeight").append(userHtml);
+					$("#typingIndicator").show();
+					
+					// Scroll to bottom
+					$("#messageFormeight").scrollTop($("#messageFormeight")[0].scrollHeight);
+
+					$.ajax({
+						data: {
+							msg: rawText,	
+						},
+						type: "POST",
+						url: "/get",
+						timeout: 30000,
+					}).done(function(data) {
+						$("#typingIndicator").hide();
+						
+						// Enhanced bot response with medical styling
+						var botHtml = `
+							<div class="d-flex justify-content-start mb-4">
+								<div class="img_cont_msg">
+									<div class="bot-avatar">
+										<i class="fas fa-user-md"></i>
+									</div>
+								</div>
+								<div class="msg_cotainer">
+									<div class="bot-response">
+										${data}
+									</div>
+									<span class="msg_time">${str_time}</span>
+								</div>
+							</div>
+						`;
+						$("#messageFormeight").append(botHtml);
+						
+						// Scroll to bottom
+						$("#messageFormeight").scrollTop($("#messageFormeight")[0].scrollHeight);
+					}).fail(function(xhr, status, error) {
+						$("#typingIndicator").hide();
+						
+						var errorHtml = `
+							<div class="d-flex justify-content-start mb-4">
+								<div class="img_cont_msg">
+									<div class="bot-avatar error">
+										<i class="fas fa-exclamation-triangle"></i>
+									</div>
+								</div>
+								<div class="msg_cotainer error">
+									<div class="bot-response">
+										I apologize, but I'm experiencing technical difficulties. Please try again in a moment.
+									</div>
+									<span class="msg_time">${str_time}</span>
+								</div>
+							</div>
+						`;
+						$("#messageFormeight").append(errorHtml);
+						
+						// Scroll to bottom
+						$("#messageFormeight").scrollTop($("#messageFormeight")[0].scrollHeight);
+					});
+				});
+
+				// Enter key support
+				$("#text").on("keypress", function(e) {
+					if (e.which === 13) {
+						$("#messageArea").submit();
+					}
+				});
+			});
+		</script>
+        
+    </body>
+</html>
